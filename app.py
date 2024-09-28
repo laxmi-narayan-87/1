@@ -1,7 +1,14 @@
-import streamlit as st
+#import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+import streamlit as st
+try:
+    from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+    st.write("scikit-learn imported successfully!")
+except ModuleNotFoundError:
+    st.write("scikit-learn not installed. Please check requirements.")
+
+#from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
