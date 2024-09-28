@@ -1,23 +1,12 @@
-#import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
-import streamlit as st
-try:
-    from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-    st.write("scikit-learn imported successfully!")
-except ModuleNotFoundError:
-    st.write("scikit-learn not installed. Please check requirements.")
-
-#from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import xgboost as xgb
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Load the dataset for ML models
+# Load the dataset for machine learning models
 @st.cache
 def load_ml_data():
     df = pd.read_csv("https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/Agriculture_commodities_dataset.csv")
@@ -29,50 +18,49 @@ st.title("Agriculture Commodities Price Prediction and Forecasting")
 # Preprocess the data
 df['date'] = pd.to_datetime(df['date'])
 df_num = df.select_dtypes(include=['int64', 'float64'])
-mn = MinMaxScaler()
-df_num_mn = pd.DataFrame(mn.fit_transform(df_num), columns=df_num.columns)
+
+# Normalizing numeric data (similar to MinMaxScaler)
+df_num_normalized = (df_num - df_num.min()) / (df_num.max() - df_num.min())
 
 df_cat = df.select_dtypes(include=object)
-le = LabelEncoder()
+df_cat_encoded = pd.get_dummies(df_cat)  # One-hot encoding for categorical variables
 
-for col in ['APMC', 'Commodity', 'Month', 'district_name', 'state_name']:
-    df_cat[col] = le.fit_transform(df_cat[col])
-
-df_pred = pd.concat([df_cat, df_num_mn], axis=1)
-x = df_pred.iloc[:, :9]
-y = df_pred[['modal_price']]
+df_pred = pd.concat([df_cat_encoded, df_num_normalized], axis=1)
+x = df_pred.drop(columns=['modal_price'])
+y = df_pred['modal_price']
 
 # Train Test Split
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+train_size = int(0.8 * len(df_pred))
+x_train, x_test = x[:train_size], x[train_size:]
+y_train, y_test = y[:train_size], y[train_size:]
 
-# User can select which model to run
-model_choice = st.selectbox('Choose Machine Learning Model', ['Decision Tree', 'Random Forest'])
+# User can select which XGBoost model to run
+model_choice = st.selectbox('Choose Model', ['XGBoost Decision Tree', 'XGBoost Random Forest'])
 
-# Train and Predict using Decision Tree
-if model_choice == 'Decision Tree':
-    dtree = DecisionTreeRegressor(criterion='squared_error', max_depth=5)
-    dtree.fit(x_train, y_train)
-    y_pred = dtree.predict(x_test)
-
-    # Show metrics
-    st.write("### Decision Tree Metrics")
-    st.write(f"MSE: {mean_squared_error(y_test, y_pred)}")
-    st.write(f"MAE: {mean_absolute_error(y_test, y_pred)}")
-    st.write(f"R2: {r2_score(y_test, y_pred)}")
-
-# Train and Predict using Random Forest
-elif model_choice == 'Random Forest':
-    classifier = RandomForestRegressor(n_estimators=500, criterion='squared_error')
-    classifier.fit(x_train, y_train)
-    y_pred = classifier.predict(x_test)
+# XGBoost Model Setup
+if model_choice == 'XGBoost Decision Tree':
+    model = xgb.XGBRegressor(objective='reg:squarederror', max_depth=5)
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
 
     # Show metrics
-    st.write("### Random Forest Metrics")
-    st.write(f"MSE: {mean_squared_error(y_test, y_pred)}")
-    st.write(f"MAE: {mean_absolute_error(y_test, y_pred)}")
-    st.write(f"R2: {r2_score(y_test, y_pred)}")
+    st.write("### XGBoost Decision Tree Metrics")
+    st.write(f"MSE: {np.mean((y_test - y_pred) ** 2)}")
+    st.write(f"MAE: {np.mean(abs(y_test - y_pred))}")
+    st.write(f"R2 Score: {1 - np.sum((y_test - y_pred) ** 2) / np.sum((y_test - np.mean(y_test)) ** 2)}")
 
-# Visualization
+elif model_choice == 'XGBoost Random Forest':
+    model = xgb.XGBRFRegressor(objective='reg:squarederror', max_depth=5, n_estimators=100)
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+
+    # Show metrics
+    st.write("### XGBoost Random Forest Metrics")
+    st.write(f"MSE: {np.mean((y_test - y_pred) ** 2)}")
+    st.write(f"MAE: {np.mean(abs(y_test - y_pred))}")
+    st.write(f"R2 Score: {1 - np.sum((y_test - y_pred) ** 2) / np.sum((y_test - np.mean(y_test)) ** 2)}")
+
+# Visualization of Min_price vs Max_price
 st.write("### Visualization of Min_price vs Max_price")
 plt.figure(figsize=(10, 6))
 sns.scatterplot(x='min_price', y='max_price', data=df, color='blue', alpha=0.7)
@@ -81,10 +69,10 @@ plt.xlabel('Min_price')
 plt.ylabel('Max_price')
 st.pyplot(plt)
 
-# Load dataset for SARIMAX
+# Load dataset for SARIMAX forecasting
 @st.cache
 def load_sarimax_data():
-    df_forecast = pd.read_csv("https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/monthly_data.csv")  # Replace with the correct file path
+    df_forecast = pd.read_csv("https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/monthly_data.csv")
     return df_forecast
 
 df_forecast = load_sarimax_data()
