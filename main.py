@@ -1,17 +1,31 @@
 # Project: A Study On Agriculture Commodities Price Prediction and Forecasting
 
 # Import necessary libraries
+import streamlit as st
 import pandas as pd
 import numpy as np
-import xgboost as xgb
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import statsmodels.api as sm
-import seaborn as sns
-import matplotlib.pyplot as plt
+
+# Attempt to import XGBoost and handle import errors
+try:
+    import xgboost as xgb
+except ModuleNotFoundError:
+    st.error("XGBoost is not installed. Please check requirements.txt.")
+
+# Attempt to import statsmodels and other libraries
+try:
+    from statsmodels.tsa.statespace.sarimax import SARIMAX
+    import statsmodels.api as sm
+    from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError as e:
+    st.error(f"Error importing libraries: {e}. Please check your requirements.")
 
 # Load the dataset
-df = pd.read_csv("https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/Agriculture_commodities_dataset.csv")
+try:
+    df = pd.read_csv("https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/Agriculture_commodities_dataset.csv")
+except Exception as e:
+    st.error(f"Error loading dataset: {e}")
 
 # Data Preprocessing
 df.isnull().sum()
@@ -38,113 +52,131 @@ x_train, x_test = x[:train_size], x[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
 
 # Multi Linear Regression (MLR)
-MLR_model1 = sm.OLS(y_train, x_train).fit()
-print(MLR_model1.summary())
+try:
+    MLR_model1 = sm.OLS(y_train, x_train).fit()
+    print(MLR_model1.summary())
 
-# Prediction using MLR
-y_test_pred = MLR_model1.predict(x_test)
+    # Prediction using MLR
+    y_test_pred = MLR_model1.predict(x_test)
 
-# Evaluation Metrics for MLR
-print("MLR Metrics:")
-print("MSE:", mean_squared_error(y_test, y_test_pred))
-print("MAE:", mean_absolute_error(y_test, y_test_pred))
-print("R2:", r2_score(y_test, y_test_pred))
+    # Evaluation Metrics for MLR
+    st.write("MLR Metrics:")
+    st.write("MSE:", mean_squared_error(y_test, y_test_pred))
+    st.write("MAE:", mean_absolute_error(y_test, y_test_pred))
+    st.write("R2:", r2_score(y_test, y_test_pred))
+except Exception as e:
+    st.error(f"Error during MLR training or evaluation: {e}")
 
 # XGBoost Decision Tree
-xgb_dtree = xgb.XGBRegressor(objective='reg:squarederror', max_depth=5)
-xgb_dtree.fit(x_train, y_train)
-y_pred1 = xgb_dtree.predict(x_test)
+try:
+    xgb_dtree = xgb.XGBRegressor(objective='reg:squarederror', max_depth=5)
+    xgb_dtree.fit(x_train, y_train)
+    y_pred1 = xgb_dtree.predict(x_test)
 
-# Evaluation Metrics for XGBoost Decision Tree
-print("\nXGBoost Decision Tree Metrics:")
-print("MSE:", mean_squared_error(y_test, y_pred1))
-print("MAE:", mean_absolute_error(y_test, y_pred1))
-print("R2:", r2_score(y_test, y_pred1))
+    # Evaluation Metrics for XGBoost Decision Tree
+    st.write("\nXGBoost Decision Tree Metrics:")
+    st.write("MSE:", mean_squared_error(y_test, y_pred1))
+    st.write("MAE:", mean_absolute_error(y_test, y_pred1))
+    st.write("R2:", r2_score(y_test, y_pred1))
+except Exception as e:
+    st.error(f"Error during XGBoost Decision Tree training or evaluation: {e}")
 
 # XGBoost Random Forest
-xgb_rf = xgb.XGBRFRegressor(objective='reg:squarederror', max_depth=5, n_estimators=100)
-xgb_rf.fit(x_train, y_train)
-y_pred2 = xgb_rf.predict(x_test)
+try:
+    xgb_rf = xgb.XGBRFRegressor(objective='reg:squarederror', max_depth=5, n_estimators=100)
+    xgb_rf.fit(x_train, y_train)
+    y_pred2 = xgb_rf.predict(x_test)
 
-# Evaluation Metrics for XGBoost Random Forest
-print("\nXGBoost Random Forest Metrics:")
-print("MSE:", mean_squared_error(y_test, y_pred2))
-print("MAE:", mean_absolute_error(y_test, y_pred2))
-print("R2:", r2_score(y_test, y_pred2))
+    # Evaluation Metrics for XGBoost Random Forest
+    st.write("\nXGBoost Random Forest Metrics:")
+    st.write("MSE:", mean_squared_error(y_test, y_pred2))
+    st.write("MAE:", mean_absolute_error(y_test, y_pred2))
+    st.write("R2:", r2_score(y_test, y_pred2))
+except Exception as e:
+    st.error(f"Error during XGBoost Random Forest training or evaluation: {e}")
 
 # Visualization
-plt.figure(figsize=(10, 6))
+try:
+    plt.figure(figsize=(10, 6))
 
-# Scatter plot for Min_price vs Max_price
-sns.scatterplot(x='min_price', y='max_price', data=df, color='blue', alpha=0.7)
-plt.title('Scatter Plot for Min_price vs Maximum_price')
-plt.xlabel('Min_price')
-plt.ylabel('Max_price')
-plt.show()
+    # Scatter plot for Min_price vs Max_price
+    sns.scatterplot(x='min_price', y='max_price', data=df, color='blue', alpha=0.7)
+    plt.title('Scatter Plot for Min_price vs Maximum_price')
+    plt.xlabel('Min_price')
+    plt.ylabel('Max_price')
+    plt.show()
+    st.pyplot(plt)
 
-# Bar chart for Month and Commodity
-plt.figure(figsize=(10, 6))
-sns.countplot(x='Month', hue='Commodity', data=df, palette='Set2')
-plt.title('Bar Chart for Month and Commodity')
-plt.xlabel('Month')
-plt.ylabel('Count')
-plt.show()
+    # Bar chart for Month and Commodity
+    plt.figure(figsize=(10, 6))
+    sns.countplot(x='Month', hue='Commodity', data=df, palette='Set2')
+    plt.title('Bar Chart for Month and Commodity')
+    plt.xlabel('Month')
+    plt.ylabel('Count')
+    plt.show()
+    st.pyplot(plt)
 
-# Correlation heatmap
-df_numeric = df.select_dtypes(include=[np.number])
-correlation_matrix = df_numeric.corr()
-plt.figure(figsize=(8, 6))
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5)
-plt.title('Correlation Plot')
-plt.show()
+    # Correlation heatmap
+    df_numeric = df.select_dtypes(include=[np.number])
+    correlation_matrix = df_numeric.corr()
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5)
+    plt.title('Correlation Plot')
+    plt.show()
+    st.pyplot(plt)
+except Exception as e:
+    st.error(f"Error during visualization: {e}")
 
 # ---------------------------------------------------------------
 
 # SARIMAX Commodity Price Forecasting
 
 # Load dataset for SARIMAX
-file_path = "https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/monthly_data.csv"  # Update this with your local file path
-df_forecast = pd.read_csv(file_path)
+try:
+    file_path = "https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/monthly_data.csv"
+    df_forecast = pd.read_csv(file_path)
 
-# Preprocessing for SARIMAX
-df_forecast.set_index('Commodities', inplace=True)
-df_forecast = df_forecast.T
-df_forecast.index = pd.date_range(start='2014-01', periods=len(df_forecast), freq='M')
-df_forecast = df_forecast.ffill()
+    # Preprocessing for SARIMAX
+    df_forecast.set_index('Commodities', inplace=True)
+    df_forecast = df_forecast.T
+    df_forecast.index = pd.date_range(start='2014-01', periods=len(df_forecast), freq='M')
+    df_forecast = df_forecast.ffill()
 
-# List of commodities for forecasting
-commodities = df_forecast.columns.tolist()
+    # List of commodities for forecasting
+    commodities = df_forecast.columns.tolist()
 
-# Choose a commodity for forecasting
-selected_commodity = commodities[0]  # You can change this to any commodity
+    # Choose a commodity for forecasting
+    selected_commodity = commodities[0]  # You can change this to any commodity
 
-# Apply SARIMAX
-data = df_forecast[selected_commodity]
-model = SARIMAX(data, order=(1, 1, 1), seasonal_order=(1, 1, 0, 12))
-sarimax_model = model.fit(disp=False)
+    # Apply SARIMAX
+    data = df_forecast[selected_commodity]
+    model = SARIMAX(data, order=(1, 1, 1), seasonal_order=(1, 1, 0, 12))
+    sarimax_model = model.fit(disp=False)
 
-# Forecast for 5 years (12 months per year)
-forecast = sarimax_model.get_forecast(steps=12 * 5)
-forecasted_values = forecast.predicted_mean
+    # Forecast for 5 years (12 months per year)
+    forecast = sarimax_model.get_forecast(steps=12 * 5)
+    forecasted_values = forecast.predicted_mean
 
-# Create a dataframe for forecasted values
-forecast_years = pd.date_range(start='2025-01', periods=12 * 5, freq='M')
-forecast_df = pd.DataFrame({'Year': forecast_years, f'{selected_commodity}_Price_Forecast': forecasted_values})
+    # Create a dataframe for forecasted values
+    forecast_years = pd.date_range(start='2025-01', periods=12 * 5, freq='M')
+    forecast_df = pd.DataFrame({'Year': forecast_years, f'{selected_commodity}_Price_Forecast': forecasted_values})
 
-# Display forecast dataframe
-print(f"Forecast for {selected_commodity} (2025-2029):")
-print(forecast_df)
+    # Display forecast dataframe
+    print(f"Forecast for {selected_commodity} (2025-2029):")
+    print(forecast_df)
 
-# Plotting the forecasted and actual values
-plt.figure(figsize=(10, 6))
-plt.plot(data, label=f'Actual {selected_commodity} Prices')
-plt.plot(forecast_years, forecasted_values, label=f'Forecasted {selected_commodity} Prices', color='orange')
-plt.title(f'{selected_commodity} Price Forecast (2025-2029)')
-plt.xlabel('Year')
-plt.ylabel('Price')
-plt.legend()
-plt.show()
+    # Plotting the forecasted and actual values
+    plt.figure(figsize=(10, 6))
+    plt.plot(data, label=f'Actual {selected_commodity} Prices')
+    plt.plot(forecast_years, forecasted_values, label=f'Forecasted {selected_commodity} Prices', color='orange')
+    plt.title(f'{selected_commodity} Price Forecast (2025-2029)')
+    plt.xlabel('Year')
+    plt.ylabel('Price')
+    plt.legend()
+    plt.show()
 
-# Training RMSE
-train_rmse = np.sqrt(((data - sarimax_model.fittedvalues) ** 2).mean())
-print(f"Training RMSE: {train_rmse:.4f}")
+    # Training RMSE
+    train_rmse = np.sqrt(((data - sarimax_model.fittedvalues) ** 2).mean())
+    print(f"Training RMSE: {train_rmse:.4f}")
+except Exception as e:
+    st.error(f"Error during SARIMAX forecasting: {e}")
