@@ -1,7 +1,11 @@
 import streamlit as st
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+
+st.write("`scikit-learn` successfully imported!")
+#import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+#from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
