@@ -3,6 +3,7 @@
 # Import necessary libraries
 import pandas as pd
 import numpy as np
+!pip install xgboost
 import xgboost as xgb
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
