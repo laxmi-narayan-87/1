@@ -3,6 +3,7 @@
 # Import necessary libraries
 import pandas as pd
 import numpy as np
+pip install sklearn
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
