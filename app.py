@@ -96,7 +96,7 @@ if st.button("Submit"):
     forecasted_values = forecast.predicted_mean
 
     # Create a dataframe for forecasted values
-    forecast_years = pd.date_range(start='2025-01', periods=12 * 5, freq='M')
+    forecast_years = pd.date_range(start='2025-01', periods=12 * 5, freq='ME')
     forecast_df = pd.DataFrame({'Year': forecast_years, f'{selected_commodity}_Price_Forecast': forecasted_values})
 
     # Display forecast dataframe
