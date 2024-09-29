@@ -28,33 +28,36 @@ except Exception as e:
     st.error(f"Error loading dataset: {e}")
 
 # Data Preprocessing
-df.isnull().sum()
-df.info()
+try:
+    df.isnull().sum()
+    df.info()
 
-# Convert date column to datetime
-df['date'] = pd.to_datetime(df['date'])
+    # Convert date column to datetime
+    df['date'] = pd.to_datetime(df['date'])
 
-# Feature engineering on numerical columns
-df_num = df.select_dtypes(include=['int64', 'float64'])
-df_num_normalized = (df_num - df_num.min()) / (df_num.max() - df_num.min())  # Manual normalization
+    # Feature engineering on numerical columns
+    df_num = df.select_dtypes(include=['int64', 'float64'])
+    df_num_normalized = (df_num - df_num.min()) / (df_num.max() - df_num.min())  # Manual normalization
 
-# Feature engineering on categorical columns using one-hot encoding
-df_cat = pd.get_dummies(df.select_dtypes(include=object))
+    # Feature engineering on categorical columns using one-hot encoding
+    df_cat = pd.get_dummies(df.select_dtypes(include=object))
 
-# Concatenate numerical and categorical columns
-df_pred = pd.concat([df_cat, df_num_normalized], axis=1)
-x = df_pred.drop(columns=['modal_price'])
-y = df_pred['modal_price']
+    # Concatenate numerical and categorical columns
+    df_pred = pd.concat([df_cat, df_num_normalized], axis=1)
+    x = df_pred.drop(columns=['modal_price'])
+    y = df_pred['modal_price']
 
-# Train Test Split
-train_size = int(0.8 * len(df_pred))
-x_train, x_test = x[:train_size], x[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
+    # Train Test Split
+    train_size = int(0.8 * len(df_pred))
+    x_train, x_test = x[:train_size], x[train_size:]
+    y_train, y_test = y[:train_size], y[train_size:]
+except Exception as e:
+    st.error(f"Error during data preprocessing: {e}")
 
 # Multi Linear Regression (MLR)
 try:
     MLR_model1 = sm.OLS(y_train, x_train).fit()
-    print(MLR_model1.summary())
+    st.write(MLR_model1.summary())
 
     # Prediction using MLR
     y_test_pred = MLR_model1.predict(x_test)
@@ -162,8 +165,8 @@ try:
     forecast_df = pd.DataFrame({'Year': forecast_years, f'{selected_commodity}_Price_Forecast': forecasted_values})
 
     # Display forecast dataframe
-    print(f"Forecast for {selected_commodity} (2025-2029):")
-    print(forecast_df)
+    st.write(f"Forecast for {selected_commodity} (2025-2029):")
+    st.write(forecast_df)
 
     # Plotting the forecasted and actual values
     plt.figure(figsize=(10, 6))
@@ -174,9 +177,10 @@ try:
     plt.ylabel('Price')
     plt.legend()
     plt.show()
+    st.pyplot(plt)
 
     # Training RMSE
     train_rmse = np.sqrt(((data - sarimax_model.fittedvalues) ** 2).mean())
-    print(f"Training RMSE: {train_rmse:.4f}")
+    st.write(f"Training RMSE: {train_rmse:.4f}")
 except Exception as e:
     st.error(f"Error during SARIMAX forecasting: {e}")
