@@ -1,18 +1,29 @@
 # Project: A Study On Agriculture Commodities Price Prediction and Forecasting
 
-# Import necessary libraries
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
+import subprocess
 
-# Attempt to import XGBoost and handle import errors
+# Function to install packages
+def install_package(package):
+    try:
+        __import__(package)
+    except ModuleNotFoundError:
+        st.warning(f"{package} is not installed. Installing now...")
+        subprocess.check_call([f"pip", "install", package])
+
+# Install required packages if not already installed
+install_package('xgboost')
+install_package('statsmodels')
+install_package('matplotlib')
+install_package('seaborn')
+install_package('sklearn')
+
+# Import the installed packages
 try:
     import xgboost as xgb
-except ModuleNotFoundError:
-    st.error("XGBoost is not installed. Please check requirements.txt.")
-
-# Attempt to import statsmodels and other libraries
-try:
     from statsmodels.tsa.statespace.sarimax import SARIMAX
     import statsmodels.api as sm
     from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -133,8 +144,6 @@ except Exception as e:
 # ---------------------------------------------------------------
 
 # SARIMAX Commodity Price Forecasting
-
-# Load dataset for SARIMAX
 try:
     file_path = "https://raw.githubusercontent.com/laxmi-narayan-87/AgroValue/refs/heads/main/monthly_data.csv"
     df_forecast = pd.read_csv(file_path)
