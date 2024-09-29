@@ -142,7 +142,7 @@ try:
     # Preprocessing for SARIMAX
     df_forecast.set_index('Commodities', inplace=True)
     df_forecast = df_forecast.T
-    df_forecast.index = pd.date_range(start='2014-01', periods=len(df_forecast), freq='M')
+    df_forecast.index = pd.date_range(start='2014-01', periods=len(df_forecast), freq='ME')
     df_forecast = df_forecast.ffill()
 
     # List of commodities for forecasting
