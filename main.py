@@ -6,20 +6,20 @@ import numpy as np
 import os
 import subprocess
 
-# Function to install packages
-def install_package(package):
-    try:
-        __import__(package)
-    except ModuleNotFoundError:
-        st.warning(f"{package} is not installed. Installing now...")
-        subprocess.check_call([f"pip", "install", package])
+# # Function to install packages
+# def install_package(package):
+#     try:
+#         __import__(package)
+#     except ModuleNotFoundError:
+#         st.warning(f"{package} is not installed. Installing now...")
+#         subprocess.check_call([f"pip", "install", package])
 
-# Install required packages if not already installed
-install_package('xgboost')
-install_package('statsmodels')
-install_package('matplotlib')
-install_package('seaborn')
-install_package('sklearn')
+# # Install required packages if not already installed
+# install_package('xgboost')
+# install_package('statsmodels')
+# install_package('matplotlib')
+# install_package('seaborn')
+# install_package('sklearn')
 
 # Import the installed packages
 try:
