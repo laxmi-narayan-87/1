@@ -6,6 +6,7 @@ import joblib
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
 import xgboost as xgb
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import Sequential
@@ -80,76 +81,115 @@ if df is not None:
         except:
             pass  # Suppress error if any occurs during SARIMAX
 
-# Train ML models on the same data
-if df is not None:
-    # Prepare the data for ML models
-    df_ml = df.T.reset_index(drop=True)  # Transpose data and reset index
-    df_ml = df_ml.dropna()  # Drop any rows with NaN values
+# Input fields for machine learning model prediction (adjust based on your model's inputs)
+if model is not None:
+    st.write("### Machine Learning Model Prediction")
+    feature1 = st.number_input("Enter Feature 1 for ML Prediction", value=0.0)
+    feature2 = st.number_input("Enter Feature 2 for ML Prediction", value=0.0)
 
-    # Split data into features and target (using first column as target for demonstration)
-    X = df_ml.iloc[:, 1:]  # Features
-    y = df_ml.iloc[:, 0]  # Target (price)
+    # Convert input features to numpy array
+    features = np.array([[feature1, feature2]])  # Adjust shape to fit your model
 
-    # Train Test Split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Predict using ML model
+    if st.button('Predict with ML Model'):
+        try:
+            prediction = model.predict(features)
+            st.success(f"Predicted Price using ML Model: {prediction[0]}")
+        except:
+            pass  # Suppress error if any occurs during prediction
 
-    # Random Forest Model
-    st.write("### Additional Models")
+# Additional models: Random Forest, XGBoost, and LSTM
+st.write("### Additional Models")
 
-    st.write("#### Random Forest")
-    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf_model.fit(X_train, y_train)
-    y_pred_rf = rf_model.predict(X_test)
-    st.write(f"Random Forest Accuracy: {accuracy_score(y_test, y_pred_rf)}")
+# Preprocess data for additional models
+X = df.dropna().values  # Drop NaN values and convert to numpy array
+y = df[selected_commodity].dropna().values  # Target variable
 
-    # XGBoost Model
-    st.write("#### XGBoost")
-    xgb_model = xgb.XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42)
-    xgb_model.fit(X_train, y_train)
-    y_pred_xgb = xgb_model.predict(X_test)
-    st.write(f"XGBoost Accuracy: {accuracy_score(y_test, y_pred_xgb)}")
+# Split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # LSTM Model
-    st.write("#### LSTM")
+# Random Forest
+st.write("#### Random Forest")
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+rf_pred = rf_model.predict(X_test)
+st.write(f"Random Forest Accuracy: {rf_model.score(X_test, y_test)}")
 
-    # Data Scaling
-    scaler = MinMaxScaler()
-    data_scaled = scaler.fit_transform(X)  # Scale the features for LSTM
+# XGBoost
+st.write("#### XGBoost")
+xgb_model = xgb.XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42)
+xgb_model.fit(X_train, y_train)
+xgb_pred = xgb_model.predict(X_test)
+st.write(f"XGBoost Accuracy: {accuracy_score(y_test, xgb_pred)}")
 
-    time_step = 10
-    X_lstm, y_lstm = [], []
+# LSTM
+st.write("#### LSTM")
+scaler = MinMaxScaler()
+data_scaled = scaler.fit_transform(df[selected_commodity].values.reshape(-1, 1))
 
-    for i in range(len(data_scaled) - time_step - 1):
-        X_lstm.append(data_scaled[i:(i + time_step), 0])
-        y_lstm.append(data_scaled[i + time_step, 0])
+time_step = 10
+X, y = [], []
 
-    X_lstm = np.array(X_lstm)
-    y_lstm = np.array(y_lstm)
+# Prepare data for LSTM
+for i in range(len(data_scaled) - time_step - 1):
+    X.append(data_scaled[i:(i + time_step), 0])
+    y.append(data_scaled[i + time_step, 0])
 
-    # Reshape X for LSTM input
-    X_lstm = X_lstm.reshape((X_lstm.shape[0], X_lstm.shape[1], 1))
+X = np.array(X)
+y = np.array(y)
 
-    # Train Test Split for LSTM
-    X_train_lstm, X_test_lstm, y_train_lstm, y_test_lstm = train_test_split(X_lstm, y_lstm, test_size=0.2, random_state=42)
+# Reshape input to be [samples, time steps, features]
+X = X.reshape(X.shape[0], time_step, 1)
 
-    # LSTM Model Definition
-    lstm_model = Sequential()
-    lstm_model.add(LSTM(50, return_sequences=True, input_shape=(X_train_lstm.shape[1], 1)))
-    lstm_model.add(LSTM(50, return_sequences=False))
-    lstm_model.add(Dense(1))
+train_size = int(len(X) * 0.8)
+X_train, X_test = X[:train_size], X[train_size:]
+y_train, y_test = y[:train_size], y[train_size:]
 
-    lstm_model.compile(optimizer='adam', loss='mean_squared_error')
+# Define the LSTM model
+lstm_model = Sequential()
+lstm_model.add(LSTM(50, return_sequences=True, input_shape=(time_step, 1)))
+lstm_model.add(LSTM(50, return_sequences=False))
+lstm_model.add(Dense(1))
 
-    # Fit the model
-    lstm_model.fit(X_train_lstm, y_train_lstm, epochs=10, batch_size=1, verbose=1)
+lstm_model.compile(optimizer='adam', loss='mean_squared_error')
 
-    # Make Predictions
-    train_predict_lstm = lstm_model.predict(X_train_lstm)
-    test_predict_lstm = lstm_model.predict(X_test_lstm)
+# Fit the model
+lstm_model.fit(X_train, y_train, epochs=10, batch_size=1, verbose=1)
 
-    # Inverse scaling to get original values
-    train_predict_lstm = scaler.inverse_transform(train_predict_lstm)
-    test_predict_lstm = scaler.inverse_transform(test_predict_lstm)
+# Make predictions
+train_predict = lstm_model.predict(X_train)
+test_predict = lstm_model.predict(X_test)
 
-    st.write(f"LSTM Train Prediction: {train_predict_lstm}")
-    st.write(f"LSTM Test Prediction: {test_predict_lstm}")
+# Inverse scaling to get actual values
+train_predict = scaler.inverse_transform(train_predict)
+test_predict = scaler.inverse_transform(test_predict)
+
+st.write(f"LSTM Train Prediction: {train_predict}")
+st.write(f"LSTM Test Prediction: {test_predict}")
+
+# Plot all models' predictions
+plt.figure(figsize=(14, 8))
+
+# Random Forest plot
+plt.subplot(3, 1, 1)
+plt.plot(y_test, label='Actual')
+plt.plot(rf_pred, label='Random Forest Predictions', color='orange')
+plt.title('Random Forest Predictions')
+plt.legend()
+
+# XGBoost plot
+plt.subplot(3, 1, 2)
+plt.plot(y_test, label='Actual')
+plt.plot(xgb_pred, label='XGBoost Predictions', color='orange')
+plt.title('XGBoost Predictions')
+plt.legend()
+
+# LSTM plot
+plt.subplot(3, 1, 3)
+plt.plot(y_test, label='Actual')
+plt.plot(test_predict, label='LSTM Predictions', color='orange')
+plt.title('LSTM Predictions')
+plt.legend()
+
+plt.tight_layout()
+st.pyplot(plt)
