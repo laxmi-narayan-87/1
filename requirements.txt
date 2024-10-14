@@ -1,0 +1,9 @@
+Flask
+numpy
+pandas
+scikit-learn
+statsmodels
+streamlit
+requests
+joblib
+matplotlib
