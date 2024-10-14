@@ -4,6 +4,14 @@ import numpy as np
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import joblib
 import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
+import xgboost as xgb
+from sklearn.metrics import accuracy_score
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from sklearn.preprocessing import MinMaxScaler
 
 # Load the ML model
 try:
@@ -89,3 +97,51 @@ if model is not None:
             st.success(f"Predicted Price using ML Model: {prediction[0]}")
         except:
             pass  # Suppress error if any occurs during prediction
+
+# Additional models: Random Forest, XGBoost, and LSTM
+st.write("### Additional Models")
+
+# Random Forest
+st.write("#### Random Forest")
+data = load_iris()
+X = data.data
+y = data.target
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+y_pred = rf_model.predict(X_test)
+st.write(f"Random Forest Accuracy: {rf_model.score(X_test, y_test)}")
+
+# XGBoost
+st.write("#### XGBoost")
+xgb_model = xgb.XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42)
+xgb_model.fit(X_train, y_train)
+y_pred = xgb_model.predict(X_test)
+st.write(f"XGBoost Accuracy: {accuracy_score(y_test, y_pred)}")
+
+# LSTM
+st.write("#### LSTM")
+time_series_data = np.sin(np.arange(0, 100, 0.1)).reshape(-1, 1)
+scaler = MinMaxScaler()
+data_scaled = scaler.fit_transform(time_series_data)
+time_step = 10
+X, y = [], []
+for i in range(len(data_scaled) - time_step - 1):
+    X.append(data_scaled[i:(i + time_step), 0])
+    y.append(data_scaled[i + time_step, 0])
+X = np.array(X).reshape(-1, time_step, 1)
+train_size = int(len(X) * 0.8)
+X_train, X_test = X[:train_size], X[train_size:]
+y_train, y_test = y[:train_size], y[train_size:]
+lstm_model = Sequential()
+lstm_model.add(LSTM(50, return_sequences=True, input_shape=(time_step, 1)))
+lstm_model.add(LSTM(50, return_sequences=False))
+lstm_model.add(Dense(1))
+lstm_model.compile(optimizer='adam', loss='mean_squared_error')
+lstm_model.fit(X_train, y_train, epochs=10, batch_size=1, verbose=1)
+train_predict = lstm_model.predict(X_train)
+test_predict = lstm_model.predict(X_test)
+train_predict = scaler.inverse_transform(train_predict)
+test_predict = scaler.inverse_transform(test_predict)
+st.write(f"LSTM Train Prediction: {train_predict}")
+st.write(f"LSTM Test Prediction: {test_predict}")
