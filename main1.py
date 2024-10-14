@@ -120,28 +120,49 @@ y_pred = xgb_model.predict(X_test)
 st.write(f"XGBoost Accuracy: {accuracy_score(y_test, y_pred)}")
 
 # LSTM
+# LSTM
 st.write("#### LSTM")
-time_series_data = np.sin(np.arange(0, 100, 0.1)).reshape(-1, 1)
+time_series_data = np.sin(np.arange(0, 100, 0.1)).reshape(-1, 1)  # Simulated data
+
 scaler = MinMaxScaler()
 data_scaled = scaler.fit_transform(time_series_data)
+
 time_step = 10
 X, y = [], []
+
+# Preparing input data with the correct shape
 for i in range(len(data_scaled) - time_step - 1):
     X.append(data_scaled[i:(i + time_step), 0])
     y.append(data_scaled[i + time_step, 0])
-X = np.array(X).reshape(-1, time_step, 1)
+
+X = np.array(X)
+y = np.array(y)
+
+# Reshape X to have the required 3D shape for LSTM
+X = X.reshape((X.shape[0], X.shape[1], 1))
+
 train_size = int(len(X) * 0.8)
 X_train, X_test = X[:train_size], X[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
+
+# Define the LSTM model
 lstm_model = Sequential()
-lstm_model.add(LSTM(50, return_sequences=True, input_shape=(time_step, 1)))
+lstm_model.add(LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], 1)))
 lstm_model.add(LSTM(50, return_sequences=False))
 lstm_model.add(Dense(1))
+
 lstm_model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Fit the model
 lstm_model.fit(X_train, y_train, epochs=10, batch_size=1, verbose=1)
+
+# Make predictions
 train_predict = lstm_model.predict(X_train)
 test_predict = lstm_model.predict(X_test)
+
+# Inverse scaling to get actual values
 train_predict = scaler.inverse_transform(train_predict)
 test_predict = scaler.inverse_transform(test_predict)
+
 st.write(f"LSTM Train Prediction: {train_predict}")
 st.write(f"LSTM Test Prediction: {test_predict}")
