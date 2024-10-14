@@ -7,3 +7,5 @@ streamlit
 requests
 joblib
 matplotlib
+xgboost
+tensorflow
